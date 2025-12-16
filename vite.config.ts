@@ -14,6 +14,14 @@ export default defineConfig({
   ],
   server: {
     port: 3002,
+    fs: {
+      allow: [
+        // Current project
+        '.',
+        // Allow the linked SDK
+        '/Users/bonomat/src/github/lendasat/lendaswap/client-sdk/ts-sdk'
+      ]
+    }
   },
   build: {
     emptyOutDir: true,

@@ -8,6 +8,7 @@
     "@arkade-os/sdk": "file:/Users/bonomat/src/github/arkade/ts-sdk",
     "@ionic/react": "^8.5.6",
     "@lendasat/lendasat-wallet-bridge": "^0.0.90",
+    "@lendasat/lendaswap-sdk": "link:/Users/bonomat/src/github/lendasat/lendaswap/client-sdk/ts-sdk",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@noble/secp256k1": "3.0.0",

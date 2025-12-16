@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import Content from '../../../components/Content'
 import Padded from '../../../components/Padded'
 import Header from '../../../components/Header'
@@ -18,6 +18,9 @@ import Loading from '../../../components/Loading'
 import WarningBox from '../../../components/Warning'
 import { extractError } from '../../../lib/error'
 import SuccessIcon from '../../../icons/Success'
+import { Client as SdkClient, createDexieSwapStorage, createDexieWalletStorage } from '@lendasat/lendaswap-sdk'
+import { sleep } from '../../../lib/sleep'
+
 
 const formatRelativeExpiry = (timestamp: number): string => {
   const now = Math.floor(Date.now() / 1000)
@@ -212,6 +215,15 @@ export default function LendaVtxo() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [successTxid, setSuccessTxid] = useState('')
   const [refreshedCount, setRefreshedCount] = useState(0)
+  const [sdkClient, setSdkClient] = useState<SdkClient | undefined>()
+
+  useEffect(() => {
+    const setup = async () => {
+      const sdk = await getSdkClient();
+      setSdkClient(sdk)
+    }
+    setup()
+  }, [])
 
   // Filter for preconfirmed and settled VTXOs, sort by oldest expiry first
   const eligibleVtxos = useMemo(() => {
@@ -255,20 +267,40 @@ export default function LendaVtxo() {
       return
     }
 
-    setIsLoading(true)
-    setError('')
-
+    if (!sdkClient) {
+      setError('Lendaswap sdk not loaded')
+      return
+    }
     try {
-      const txid = await svcWallet.sendBitcoin({
+      setIsLoading(true)
+      setError('')
+
+      const vtxos = selectedVtxos.map((v) => `${v.txid}:${v.vout}`)
+      const newVar = await sdkClient.estimateVtxoSwap(vtxos)
+      console.log('Vtxos:', newVar)
+
+      const createVtxoSwapResult = await sdkClient.createVtxoSwap(vtxos)
+
+      const fundTxid = await svcWallet.sendBitcoin({
         amount: totalSelectedAmount,
-        address:
-          'tark1qra883hysahlkt0ujcwhv0x2n278849c3m7t3a08l7fdc40f4f2nmqwxh7lh0hd4udw685jjm7f8vcuhz5nr05en0xgucqe7fvlnxf2fk4ugl0',
+        address:createVtxoSwapResult.response.clientVhtlcAddress,
         selectedVtxos,
       })
+      console.log('swap funded: txid', fundTxid)
+
+      let response = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
+      while (response.status !== 'serverfunded') {
+        response = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
+        console.log('waiting....', response.status)
+        await sleep(1000)
+      }
+
+      const claimTxid = await sdkClient.claimVtxoSwap(response, createVtxoSwapResult.swapParams, 'tark1qra883hysahlkt0ujcwhv0x2n278849c3m7t3a08l7fdc40f4f2nm7pyrqh5uk06524m9afak77qswv3y0dfcyxlx39kanhjewurp4mupv45e9')
+      console.log('swap complete: txid', claimTxid)
 
       // Success
       setRefreshedCount(selectedIds.size)
-      setSuccessTxid(txid)
+      setSuccessTxid(claimTxid)
       setDialogOpen(false)
       setSelectedIds(new Set())
       setSuccessOpen(true)
@@ -372,4 +404,31 @@ export default function LendaVtxo() {
       />
     </>
   )
+}
+
+// API client for Lendaswap backend
+const API_BASE_URL =
+  import.meta.env.VITE_LENDASWAP_API_URL || 'http://localhost:3333';
+const ARK_SERVER_URL = import.meta.env.VITE_ARK_SERVER || '';
+
+let sdkClient: SdkClient | null = null;
+
+async function getSdkClient(): Promise<SdkClient> {
+  if (!sdkClient) {
+    const walletStorage = createDexieWalletStorage('lendaswap-wallet-v1');
+    const swapStorage = createDexieSwapStorage('lendaswap-v1');
+    sdkClient = await SdkClient.create(
+      API_BASE_URL,
+      walletStorage,
+      swapStorage,
+      'mutinynet',
+      ARK_SERVER_URL,
+    );
+    if (!sdkClient) {
+      throw Error('Failed setting up sdk client');
+    }
+
+    await sdkClient.init();
+  }
+  return sdkClient;
 }

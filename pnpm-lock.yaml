@@ -20,6 +20,9 @@ importers:
       '@lendasat/lendasat-wallet-bridge':
         specifier: ^0.0.90
         version: 0.0.90
+      '@lendasat/lendaswap-sdk':
+        specifier: link:/Users/bonomat/src/github/lendasat/lendaswap/client-sdk/ts-sdk
+        version: link:../../lendasat/lendaswap/client-sdk/ts-sdk
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.0.1
