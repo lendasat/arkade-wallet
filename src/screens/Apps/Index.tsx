@@ -11,6 +11,7 @@ import BoltzIcon from '../../icons/Boltz'
 import { NavigationContext, Pages } from '../../providers/navigation'
 import LendasatIcon from './Lendasat/LendasatIcon'
 import LendaswapIcon from './Lendaswap/LendaswapIcon'
+import LendaVtxoIcon from './LendaVtxo/LendaVtxoIcon'
 
 const Middot = () => (
   <svg width='6' height='6' viewBox='0 0 6 6' fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
@@ -121,6 +122,14 @@ export default function Apps() {
               desc='Swap Bitcoin to USDC instantly'
               link='https://swap.lendasat.com'
               page={Pages.AppLendaswap}
+              live
+            />
+
+            <App
+              name='Refresh VTXOs'
+              icon={<LendaVtxoIcon />}
+              desc='Extend the expiry of your virtual coins'
+              page={Pages.AppLendaVtxo}
               live
             />
             <App name='Fuji Money' icon={<FujiMoneyIcon />} desc='Synthetic Assets on the Bitcoin network' />
