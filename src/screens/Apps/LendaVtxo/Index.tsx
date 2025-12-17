@@ -143,9 +143,8 @@ const RefreshDialog = ({
   estimate,
   isEstimating,
 }: RefreshDialogProps) => {
-  // EstimateVtxoSwapResponse properties vary - access them safely
-  const fee = estimate ? Number((estimate as any).fee ?? (estimate as any).fee_sats ?? 0) : null
-  const outputAmount = estimate ? Number((estimate as any).output_amount ?? (estimate as any).outputAmount ?? 0) : null
+  const fee = estimate ? estimate.feeSats : 0
+  const outputAmount = estimate ? estimate.outputSats : 0
 
   return (
     <SheetModal isOpen={isOpen} onClose={onClose}>
@@ -163,12 +162,12 @@ const RefreshDialog = ({
           </FlexRow>
           <FlexRow between>
             <Text color="dark60">Service Fee</Text>
-            <Text>{isEstimating ? 'Calculating...' : fee !== null ? `${prettyNumber(fee)} sats` : '—'}</Text>
+            <Text>{isEstimating ? 'Calculating...' : fee !== null ? `${prettyNumber(fee as number)} sats` : '—'}</Text>
           </FlexRow>
           <FlexRow between>
             <Text color="dark60">You Receive</Text>
             <Text bold color="green">
-              {isEstimating ? 'Calculating...' : outputAmount !== null ? `${prettyNumber(outputAmount)} sats` : '—'}
+              {isEstimating ? 'Calculating...' : outputAmount !== null ? `${prettyNumber(outputAmount as number)} sats` : '—'}
             </Text>
           </FlexRow>
         </FlexCol>
