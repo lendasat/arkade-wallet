@@ -21,8 +21,8 @@ importers:
         specifier: ^0.0.90
         version: 0.0.90
       '@lendasat/lendaswap-sdk':
-        specifier: ^0.1.6
-        version: 0.1.6
+        specifier: ^0.1.7
+        version: 0.1.7
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.0.1
@@ -523,8 +523,8 @@ packages:
   '@lendasat/lendasat-wallet-bridge@0.0.90':
     resolution: {integrity: sha512-VfgM5vUx81vVWlggtOReUkaC8VVOFVavIMixQM0G/ZI0L/nMi10fmkIBvXOVI4Jmsu9A5z6wHSUrERxD3a/Juw==}
 
-  '@lendasat/lendaswap-sdk@0.1.6':
-    resolution: {integrity: sha512-1Zcuob8jMP/1BNtv6KWop/svzfAOJ6ADxDFaleNqZooph5qRVHeESIrOg8WohP2wXPtg/bsUxzfLpEfnOORJHA==}
+  '@lendasat/lendaswap-sdk@0.1.7':
+    resolution: {integrity: sha512-AaQ3sdAQXjbBKbj7LY6zH6hekvQaOhEdgeY7y/CxhucDwM5FWaqCsAndx+jURGazmnRDQ5FquP5jQjeoy8L1nA==}
 
   '@noble/ciphers@0.5.3':
     resolution: {integrity: sha512-B0+6IIHiqEs3BPMT0hcRmHvEj2QHOLu+uwt+tqDDeVd0oyVzh7BPrDcPjRnV1PV/5LaknXJJQvOuRGR0zQJz+w==}
@@ -2947,7 +2947,7 @@ snapshots:
 
   '@lendasat/lendasat-wallet-bridge@0.0.90': {}
 
-  '@lendasat/lendaswap-sdk@0.1.6':
+  '@lendasat/lendaswap-sdk@0.1.7':
     dependencies:
       dexie: 4.2.1
 

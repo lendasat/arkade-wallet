@@ -23,6 +23,10 @@ import { Client as SdkClient, createDexieSwapStorage, createDexieWalletStorage, 
 import { sleep } from '../../../lib/sleep'
 import { storeVtxoSwap, updateStoredVtxoSwap } from './Settings'
 import { getReceivingAddresses } from '../../../lib/asp'
+import { AspContext } from '../../../providers/asp'
+import { Indexer } from '../../../lib/indexer'
+import { ArkAddress, SubscriptionResponse } from '@arkade-os/sdk'
+import { hex } from '@scure/base'
 
 
 const formatRelativeExpiry = (timestamp: number): string => {
@@ -195,8 +199,24 @@ interface SuccessDialogProps {
   refreshedCount: number
 }
 
+const ExternalLinkIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M11 7.5V11.5C11 12.0523 10.5523 12.5 10 12.5H2.5C1.94772 12.5 1.5 12.0523 1.5 11.5V4C1.5 3.44772 1.94772 3 2.5 3H6.5M8.5 1.5H12.5M12.5 1.5V5.5M12.5 1.5L6 8"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
 const SuccessDialog = ({ isOpen, onClose, txid, refreshedCount }: SuccessDialogProps) => {
   const shortTxid = txid.length > 16 ? `${txid.slice(0, 8)}...${txid.slice(-8)}` : txid
+
+  const openExplorer = () => {
+    window.open(`https://explorer.arkade.sh/tx/${txid}`, '_blank', 'noreferrer')
+  }
 
   return (
     <SheetModal isOpen={isOpen} onClose={onClose}>
@@ -212,9 +232,20 @@ const SuccessDialog = ({ isOpen, onClose, txid, refreshedCount }: SuccessDialogP
           <Text color="dark50" smaller>
             Transaction ID
           </Text>
-          <Text smaller copy={txid}>
-            {shortTxid}
-          </Text>
+          <FlexRow gap="0.5rem">
+            <Text smaller copy={txid}>
+              {shortTxid}
+            </Text>
+            <span
+              onClick={openExplorer}
+              style={{ cursor: 'pointer', color: 'var(--purple)', display: 'flex', alignItems: 'center' }}
+              role="button"
+              tabIndex={0}
+              title="Open in explorer"
+            >
+              <ExternalLinkIcon />
+            </span>
+          </FlexRow>
         </FlexCol>
         <Button label="Done" onClick={onClose} />
       </FlexCol>
@@ -226,6 +257,7 @@ export default function LendaVtxo() {
   const { navigate } = useContext(NavigationContext)
   const { vtxos, svcWallet, reloadWallet } = useContext(WalletContext)
   const { config } = useContext(ConfigContext)
+  const { aspInfo } = useContext(AspContext)
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -237,6 +269,8 @@ export default function LendaVtxo() {
   const [sdkClient, setSdkClient] = useState<SdkClient | undefined>()
   const [estimate, setEstimate] = useState<EstimateVtxoSwapResponse | null>(null)
   const [isEstimating, setIsEstimating] = useState(false)
+
+  const indexer = new Indexer(aspInfo)
 
   useEffect(() => {
     const setup = async () => {
@@ -333,6 +367,15 @@ export default function LendaVtxo() {
         amount: totalSelectedAmount,
       })
 
+      const serverVhtlcAddress = ArkAddress.decode(createVtxoSwapResult.response.serverVhtlcAddress)
+      const serverVhtlcScript = hex.encode(serverVhtlcAddress.pkScript)
+
+      // Subscribe to server's VHTLC address BEFORE funding
+      const subscriptionId = await indexer.provider.subscribeForScripts([serverVhtlcScript])
+      const abortController = new AbortController()
+      const subscription = indexer.provider.getSubscription(subscriptionId, abortController.signal)
+
+      // Fund our client VHTLC address
       const fundTxid = await svcWallet.sendBitcoin({
         amount: totalSelectedAmount,
         address: createVtxoSwapResult.response.clientVhtlcAddress,
@@ -340,13 +383,45 @@ export default function LendaVtxo() {
       })
       console.log('swap funded: txid', fundTxid)
 
-      // Wait for server to fund
+      // Wait for server to fund using the subscription
+      let serverFunded = false
+      const waitForServerFunding = async (): Promise<void> => {
+        for await (const event of subscription as AsyncIterableIterator<SubscriptionResponse>) {
+          console.log('subscription event:', event)
+          // Check if server has funded (newVtxos on server's VHTLC address)
+          if (event.newVtxos && event.newVtxos.length > 0) {
+            console.log('server funded detected via subscription')
+            serverFunded = true
+            break
+          }
+        }
+      }
+
+      // Race between subscription and timeout/polling fallback
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Server funding timeout')), 60000)
+      })
+
+      try {
+        await Promise.race([waitForServerFunding(), timeoutPromise])
+      } finally {
+        abortController.abort()
+        await indexer.provider.unsubscribeForScripts(subscriptionId)
+      }
+
+      // Verify status via API
       let response = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
-      while (response.status !== 'serverfunded') {
-        response = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
-        updateStoredVtxoSwap(createVtxoSwapResult.response.id, response)
-        console.log('waiting....', response.status)
-        await sleep(1000)
+      updateStoredVtxoSwap(createVtxoSwapResult.response.id, response)
+
+      // If subscription didn't catch it, poll as fallback
+      if (!serverFunded && response.status !== 'serverfunded') {
+        console.log('polling for server funded status...')
+        while (response.status !== 'serverfunded') {
+          response = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
+          updateStoredVtxoSwap(createVtxoSwapResult.response.id, response)
+          console.log('waiting....', response.status)
+          await sleep(1000)
+        }
       }
 
       // Claim the swap
