@@ -18,8 +18,11 @@ import Loading from '../../../components/Loading'
 import WarningBox from '../../../components/Warning'
 import { extractError } from '../../../lib/error'
 import SuccessIcon from '../../../icons/Success'
-import { Client as SdkClient, createDexieSwapStorage, createDexieWalletStorage } from '@lendasat/lendaswap-sdk'
+import { SettingsIconLight } from '../../../icons/Settings'
+import { Client as SdkClient, createDexieSwapStorage, createDexieWalletStorage, EstimateVtxoSwapResponse } from '@lendasat/lendaswap-sdk'
 import { sleep } from '../../../lib/sleep'
+import { storeVtxoSwap, updateStoredVtxoSwap } from './Settings'
+import { getReceivingAddresses } from '../../../lib/asp'
 
 
 const formatRelativeExpiry = (timestamp: number): string => {
@@ -125,6 +128,8 @@ interface RefreshDialogProps {
   onConfirm: () => void
   isLoading: boolean
   error: string
+  estimate: EstimateVtxoSwapResponse | null
+  isEstimating: boolean
 }
 
 const RefreshDialog = ({
@@ -135,8 +140,12 @@ const RefreshDialog = ({
   onConfirm,
   isLoading,
   error,
+  estimate,
+  isEstimating,
 }: RefreshDialogProps) => {
-  const placeholderFee = 2 * selectedCount // placeholder fee in sats, 2 sats per vtxo
+  // EstimateVtxoSwapResponse properties vary - access them safely
+  const fee = estimate ? Number((estimate as any).fee ?? (estimate as any).fee_sats ?? 0) : null
+  const outputAmount = estimate ? Number((estimate as any).output_amount ?? (estimate as any).outputAmount ?? 0) : null
 
   return (
     <SheetModal isOpen={isOpen} onClose={onClose}>
@@ -153,15 +162,26 @@ const RefreshDialog = ({
             <Text>{prettyNumber(totalAmount)} sats</Text>
           </FlexRow>
           <FlexRow between>
-            <Text color="dark60">Estimated Fee</Text>
-            <Text>{prettyNumber(placeholderFee)} sats</Text>
+            <Text color="dark60">Service Fee</Text>
+            <Text>{isEstimating ? 'Calculating...' : fee !== null ? `${prettyNumber(fee)} sats` : '—'}</Text>
+          </FlexRow>
+          <FlexRow between>
+            <Text color="dark60">You Receive</Text>
+            <Text bold color="green">
+              {isEstimating ? 'Calculating...' : outputAmount !== null ? `${prettyNumber(outputAmount)} sats` : '—'}
+            </Text>
           </FlexRow>
         </FlexCol>
         <Text color="dark60" smaller>
           This will atomically swap your selected VTXOs for new ones with a longer expiry period.
         </Text>
         <FlexCol gap="0.5rem">
-          <Button label={isLoading ? 'Refreshing...' : 'Confirm Refresh'} onClick={onConfirm} disabled={isLoading} loading={isLoading} />
+          <Button
+            label={isLoading ? 'Refreshing...' : 'Confirm Refresh'}
+            onClick={onConfirm}
+            disabled={isLoading || isEstimating || !estimate}
+            loading={isLoading}
+          />
           <Button label="Cancel" onClick={onClose} secondary disabled={isLoading} />
         </FlexCol>
       </FlexCol>
@@ -216,6 +236,8 @@ export default function LendaVtxo() {
   const [successTxid, setSuccessTxid] = useState('')
   const [refreshedCount, setRefreshedCount] = useState(0)
   const [sdkClient, setSdkClient] = useState<SdkClient | undefined>()
+  const [estimate, setEstimate] = useState<EstimateVtxoSwapResponse | null>(null)
+  const [isEstimating, setIsEstimating] = useState(false)
 
   useEffect(() => {
     const setup = async () => {
@@ -261,6 +283,29 @@ export default function LendaVtxo() {
   const selectedVtxos = eligibleVtxos.filter((v) => selectedIds.has(v.txid))
   const totalSelectedAmount = selectedVtxos.reduce((sum, v) => sum + v.value, 0)
 
+  const handleOpenDialog = async () => {
+    setDialogOpen(true)
+    setEstimate(null)
+    setError('')
+
+    if (!sdkClient) {
+      setError('SDK not loaded')
+      return
+    }
+
+    setIsEstimating(true)
+    try {
+      const vtxoOutpoints = selectedVtxos.map((v) => `${v.txid}:${v.vout}`)
+      const est = await sdkClient.estimateVtxoSwap(vtxoOutpoints)
+      setEstimate(est)
+    } catch (err) {
+      console.error('Error estimating swap:', err)
+      setError(extractError(err))
+    } finally {
+      setIsEstimating(false)
+    }
+  }
+
   const handleRefresh = async () => {
     if (!svcWallet) {
       setError('Wallet not loaded')
@@ -271,32 +316,48 @@ export default function LendaVtxo() {
       setError('Lendaswap sdk not loaded')
       return
     }
+
     try {
       setIsLoading(true)
       setError('')
 
-      const vtxos = selectedVtxos.map((v) => `${v.txid}:${v.vout}`)
-      const newVar = await sdkClient.estimateVtxoSwap(vtxos)
-      console.log('Vtxos:', newVar)
+      const vtxoOutpoints = selectedVtxos.map((v) => `${v.txid}:${v.vout}`)
+      const createVtxoSwapResult = await sdkClient.createVtxoSwap(vtxoOutpoints)
 
-      const createVtxoSwapResult = await sdkClient.createVtxoSwap(vtxos)
+      // Store the swap for history/refund tracking
+      storeVtxoSwap({
+        id: createVtxoSwapResult.response.id,
+        response: createVtxoSwapResult.response,
+        swapParams: createVtxoSwapResult.swapParams,
+        createdAt: Date.now(),
+        vtxoOutpoints,
+        amount: totalSelectedAmount,
+      })
 
       const fundTxid = await svcWallet.sendBitcoin({
         amount: totalSelectedAmount,
-        address:createVtxoSwapResult.response.clientVhtlcAddress,
+        address: createVtxoSwapResult.response.clientVhtlcAddress,
         selectedVtxos,
       })
       console.log('swap funded: txid', fundTxid)
 
+      // Wait for server to fund
       let response = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
       while (response.status !== 'serverfunded') {
         response = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
+        updateStoredVtxoSwap(createVtxoSwapResult.response.id, response)
         console.log('waiting....', response.status)
         await sleep(1000)
       }
 
-      const claimTxid = await sdkClient.claimVtxoSwap(response, createVtxoSwapResult.swapParams, 'tark1qra883hysahlkt0ujcwhv0x2n278849c3m7t3a08l7fdc40f4f2nm7pyrqh5uk06524m9afak77qswv3y0dfcyxlx39kanhjewurp4mupv45e9')
+      // Claim the swap
+      const addresses = await getReceivingAddresses(svcWallet)
+      const claimTxid = await sdkClient.claimVtxoSwap(response, createVtxoSwapResult.swapParams, addresses.offchainAddr)
       console.log('swap complete: txid', claimTxid)
+
+      // Update stored swap status
+      const finalResponse = await sdkClient.getVtxoSwap(createVtxoSwapResult.response.id)
+      updateStoredVtxoSwap(createVtxoSwapResult.response.id, finalResponse)
 
       // Success
       setRefreshedCount(selectedIds.size)
@@ -332,7 +393,12 @@ export default function LendaVtxo() {
 
   return (
     <>
-      <Header text="Refresh VTXOs" back={() => navigate(Pages.Apps)} />
+      <Header
+        text="Refresh VTXOs"
+        back={() => navigate(Pages.Apps)}
+        auxFunc={() => navigate(Pages.AppLendaVtxoSettings)}
+        auxIcon={<SettingsIconLight />}
+      />
       <Content>
         <Padded>
           <FlexCol gap="1rem">
@@ -381,7 +447,7 @@ export default function LendaVtxo() {
         <ButtonsOnBottom>
           <Button
             label={`Refresh ${selectedIds.size} VTXO${selectedIds.size !== 1 ? 's' : ''}`}
-            onClick={() => setDialogOpen(true)}
+            onClick={handleOpenDialog}
           />
         </ButtonsOnBottom>
       )}
@@ -394,6 +460,8 @@ export default function LendaVtxo() {
         onConfirm={handleRefresh}
         isLoading={isLoading}
         error={error}
+        estimate={estimate}
+        isEstimating={isEstimating}
       />
 
       <SuccessDialog

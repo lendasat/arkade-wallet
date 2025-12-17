@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import eslint from 'vite-plugin-eslint'
+import wasm from 'vite-plugin-wasm'
+import topLevelAwait from 'vite-plugin-top-level-await'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    wasm(),
+    topLevelAwait(),
     react(),
     eslint({
       include: ['src/**/*.ts', 'src/**/*.tsx'],
@@ -14,14 +18,6 @@ export default defineConfig({
   ],
   server: {
     port: 3002,
-    fs: {
-      allow: [
-        // Current project
-        '.',
-        // Allow the linked SDK
-        '/Users/bonomat/src/github/lendasat/lendaswap/client-sdk/ts-sdk'
-      ]
-    }
   },
   build: {
     emptyOutDir: true,

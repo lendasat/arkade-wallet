@@ -27,6 +27,7 @@ import AppBoltzSwap from '../screens/Apps/Boltz/Swap'
 import AppLendasat from '../screens/Apps/Lendasat/Index'
 import AppLendaswap from '../screens/Apps/Lendaswap/Index'
 import AppLendaVtxo from '../screens/Apps/LendaVtxo/Index'
+import AppLendaVtxoSettings from '../screens/Apps/LendaVtxo/Settings'
 import Unavailable from '../screens/Wallet/Unavailable'
 
 export enum Pages {
@@ -36,6 +37,7 @@ export enum Pages {
   AppLendasat,
   AppLendaswap,
   AppLendaVtxo,
+  AppLendaVtxoSettings,
   Apps,
   Init,
   InitRestore,
@@ -75,6 +77,7 @@ const pageTab = {
   [Pages.AppLendasat]: Tabs.Apps,
   [Pages.AppLendaswap]: Tabs.Apps,
   [Pages.AppLendaVtxo]: Tabs.Apps,
+  [Pages.AppLendaVtxoSettings]: Tabs.Apps,
   [Pages.Apps]: Tabs.Apps,
   [Pages.Init]: Tabs.None,
   [Pages.InitRestore]: Tabs.None,
@@ -114,6 +117,8 @@ export const pageComponent = (page: Pages): JSX.Element => {
       return <AppLendaswap />
     case Pages.AppLendaVtxo:
       return <AppLendaVtxo />
+    case Pages.AppLendaVtxoSettings:
+      return <AppLendaVtxoSettings />
     case Pages.Apps:
       return <Apps />
     case Pages.Init:
