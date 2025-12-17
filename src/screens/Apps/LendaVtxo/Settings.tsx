@@ -92,8 +92,8 @@ const formatStatus = (status: string): string => {
     pending: 'Pending',
     clientfunded: 'Client Funded',
     serverfunded: 'Server Funded',
-    clientredeemed: 'Completed',
-    serverredeemed: 'Server Redeemed',
+    clientredeemed: 'Client Redeemed',
+    serverredeemed: 'Completed',
     clientrefunded: 'Refunded',
     clientfundedserverrefunded: 'Server Refunded',
     expired: 'Expired',
@@ -102,10 +102,10 @@ const formatStatus = (status: string): string => {
 }
 
 const getStatusColor = (status: string): string => {
-  if (status === 'clientredeemed') return 'green'
+  if (status === 'clientredeemed' || status === 'serverredeemed') return 'green'
   if (status === 'clientrefunded') return 'orange'
-  if (REFUNDABLE_STATUSES.includes(status)) return 'orange'
-  if (status === 'expired' || status === 'serverredeemed') return 'red'
+  if (REFUNDABLE_STATUSES.includes(status)) return 'red'
+  if (status === 'expired') return 'red'
   return 'dark60'
 }
 
