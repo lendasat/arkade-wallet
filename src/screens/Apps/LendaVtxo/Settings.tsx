@@ -129,7 +129,7 @@ const SwapLine = ({ swap, onRefund, isRefunding }: SwapLineProps) => {
         width: '100%',
       }}
     >
-      <FlexCol gap="0.75rem">
+      <FlexCol gap='0.75rem'>
         <FlexRow between>
           <Text bold>{prettyNumber(swap.amount)} sats</Text>
           <span
@@ -146,14 +146,16 @@ const SwapLine = ({ swap, onRefund, isRefunding }: SwapLineProps) => {
           </span>
         </FlexRow>
         <FlexRow between>
-          <Text color="dark50" smaller>
+          <Text color='dark50' smaller>
             {date}
           </Text>
-          <Text color="dark50" smaller copy={swap.id}>
+          <Text color='dark50' smaller copy={swap.id}>
             {swap.id.slice(0, 8)}...
           </Text>
         </FlexRow>
-        {isRefundable ? <Button label={isRefunding ? 'Refunding...' : 'Refund'} onClick={onRefund} disabled={isRefunding} small red /> : null}
+        {isRefundable ? (
+          <Button label={isRefunding ? 'Refunding...' : 'Refund'} onClick={onRefund} disabled={isRefunding} small red />
+        ) : null}
       </FlexCol>
     </div>
   )
@@ -173,29 +175,29 @@ const RefundDialog = ({ isOpen, onClose, swap, onConfirm, isLoading, error }: Re
 
   return (
     <SheetModal isOpen={isOpen} onClose={onClose}>
-      <FlexCol gap="1.5rem">
+      <FlexCol gap='1.5rem'>
         <Text bold>Refund Swap</Text>
         {error ? <WarningBox red text={error} /> : null}
-        <FlexCol gap="0.5rem">
+        <FlexCol gap='0.5rem'>
           <FlexRow between>
-            <Text color="dark60">Amount</Text>
+            <Text color='dark60'>Amount</Text>
             <Text>{prettyNumber(swap.amount)} sats</Text>
           </FlexRow>
           <FlexRow between>
-            <Text color="dark60">Status</Text>
+            <Text color='dark60'>Status</Text>
             <Text color={getStatusColor(swap.response.status)}>{formatStatus(swap.response.status)}</Text>
           </FlexRow>
           <FlexRow between>
-            <Text color="dark60">Swap ID</Text>
+            <Text color='dark60'>Swap ID</Text>
             <Text smaller copy={swap.id}>
               {swap.id.slice(0, 12)}...
             </Text>
           </FlexRow>
         </FlexCol>
-        <Text color="dark60" smaller wrap>
+        <Text color='dark60' smaller wrap>
           This will refund the swap back to your wallet. The funds will be returned to your Arkade address.
         </Text>
-        <FlexCol gap="0.5rem">
+        <FlexCol gap='0.5rem'>
           <Button
             label={isLoading ? 'Refunding...' : 'Confirm Refund'}
             onClick={onConfirm}
@@ -203,7 +205,7 @@ const RefundDialog = ({ isOpen, onClose, swap, onConfirm, isLoading, error }: Re
             loading={isLoading}
             red
           />
-          <Button label="Cancel" onClick={onClose} secondary disabled={isLoading} />
+          <Button label='Cancel' onClick={onClose} secondary disabled={isLoading} />
         </FlexCol>
       </FlexCol>
     </SheetModal>
@@ -291,29 +293,29 @@ export default function LendaVtxoSettings() {
     }
   }
 
-  if (loading) return <Loading text="Loading swap history..." />
+  if (loading) return <Loading text='Loading swap history...' />
 
   const refundableSwaps = swaps.filter((s) => REFUNDABLE_STATUSES.includes(s.response.status))
   const completedSwaps = swaps.filter((s) => !REFUNDABLE_STATUSES.includes(s.response.status))
 
   return (
     <>
-      <Header text="VTXO Refresh History" back={() => navigate(Pages.AppLendaVtxo)} />
+      <Header text='VTXO Refresh History' back={() => navigate(Pages.AppLendaVtxo)} />
       <Content>
         <Padded>
-          <FlexCol gap="1.5rem">
+          <FlexCol gap='1.5rem'>
             {swaps.length === 0 ? (
-              <FlexCol centered gap="1rem">
-                <Text color="dark50">No swap history yet</Text>
-                <Text color="dark60" smaller wrap centered>
+              <FlexCol centered gap='1rem'>
+                <Text color='dark50'>No swap history yet</Text>
+                <Text color='dark60' smaller wrap centered>
                   Your VTXO refresh swaps will appear here.
                 </Text>
               </FlexCol>
             ) : (
               <>
                 {refundableSwaps.length > 0 && (
-                  <FlexCol gap="0.75rem">
-                    <Text color="orange" smaller bold>
+                  <FlexCol gap='0.75rem'>
+                    <Text color='orange' smaller bold>
                       Needs Attention ({refundableSwaps.length})
                     </Text>
                     {refundableSwaps.map((swap) => (
@@ -328,8 +330,8 @@ export default function LendaVtxoSettings() {
                 )}
 
                 {completedSwaps.length > 0 && (
-                  <FlexCol gap="0.75rem">
-                    <Text color="dark50" smaller bold>
+                  <FlexCol gap='0.75rem'>
+                    <Text color='dark50' smaller bold>
                       History ({completedSwaps.length})
                     </Text>
                     {completedSwaps.map((swap) => (

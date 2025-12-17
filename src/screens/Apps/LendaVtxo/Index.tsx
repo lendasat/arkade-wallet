@@ -18,7 +18,12 @@ import Loading from '../../../components/Loading'
 import WarningBox from '../../../components/Warning'
 import { extractError } from '../../../lib/error'
 import SuccessIcon from '../../../icons/Success'
-import { Client as SdkClient, createDexieSwapStorage, createDexieWalletStorage, EstimateVtxoSwapResponse } from '@lendasat/lendaswap-sdk'
+import {
+  Client as SdkClient,
+  createDexieSwapStorage,
+  createDexieWalletStorage,
+  EstimateVtxoSwapResponse,
+} from '@lendasat/lendaswap-sdk'
 import { sleep } from '../../../lib/sleep'
 import { storeVtxoSwap, updateStoredVtxoSwap } from './Settings'
 import { getReceivingAddresses } from '../../../lib/asp'
@@ -27,10 +32,9 @@ import { Indexer } from '../../../lib/indexer'
 import { ArkAddress, SubscriptionResponse } from '@arkade-os/sdk'
 import { hex } from '@scure/base'
 
-
 const formatRelativeExpiry = (timestamp: number): string => {
   const now = Math.floor(Date.now() / 1000)
-  const delta = (timestamp / 1000)- now
+  const delta = timestamp / 1000 - now
 
   if (delta <= 0) return 'expired'
 
@@ -70,17 +74,21 @@ const VtxoLine = ({ vtxo, selected, onToggle, showBalance }: VtxoLineProps) => {
         width: '100%',
       }}
       onClick={onToggle}
-      role="button"
+      role='button'
       tabIndex={0}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1rem' }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1rem' }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
           <Checkbox checked={selected} />
           <div>
             <Text bold>{amount} sats</Text>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
+        <div
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}
+        >
           <span
             style={{
               backgroundColor: isExpired ? 'var(--red10)' : isExpiringSoon ? 'var(--orange10)' : 'var(--dark20)',
@@ -116,8 +124,8 @@ const Checkbox = ({ checked }: { checked: boolean }) => (
     }}
   >
     {checked ? (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M3 7L6 10L11 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <svg width='14' height='14' viewBox='0 0 14 14' fill='none'>
+        <path d='M3 7L6 10L11 4' stroke='white' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round' />
       </svg>
     ) : null}
   </div>
@@ -151,40 +159,44 @@ const RefreshDialog = ({
 
   return (
     <SheetModal isOpen={isOpen} onClose={onClose}>
-      <FlexCol gap="1.5rem">
+      <FlexCol gap='1.5rem'>
         <Text bold>Refresh VTXOs</Text>
         {error ? <WarningBox red text={error} /> : null}
-        <FlexCol gap="0.5rem">
+        <FlexCol gap='0.5rem'>
           <FlexRow between>
-            <Text color="dark60">Selected VTXOs</Text>
+            <Text color='dark60'>Selected VTXOs</Text>
             <Text>{selectedCount}</Text>
           </FlexRow>
           <FlexRow between>
-            <Text color="dark60">Total Amount</Text>
+            <Text color='dark60'>Total Amount</Text>
             <Text>{prettyNumber(totalAmount)} sats</Text>
           </FlexRow>
           <FlexRow between>
-            <Text color="dark60">Service Fee</Text>
+            <Text color='dark60'>Service Fee</Text>
             <Text>{isEstimating ? 'Calculating...' : fee !== null ? `${prettyNumber(fee as number)} sats` : '—'}</Text>
           </FlexRow>
           <FlexRow between>
-            <Text color="dark60">You Receive</Text>
-            <Text bold color="green">
-              {isEstimating ? 'Calculating...' : outputAmount !== null ? `${prettyNumber(outputAmount as number)} sats` : '—'}
+            <Text color='dark60'>You Receive</Text>
+            <Text bold color='green'>
+              {isEstimating
+                ? 'Calculating...'
+                : outputAmount !== null
+                  ? `${prettyNumber(outputAmount as number)} sats`
+                  : '—'}
             </Text>
           </FlexRow>
         </FlexCol>
-        <Text color="dark60" smaller>
+        <Text color='dark60' smaller>
           This will atomically swap your selected VTXOs for new ones with a longer expiry period.
         </Text>
-        <FlexCol gap="0.5rem">
+        <FlexCol gap='0.5rem'>
           <Button
             label={isLoading ? 'Refreshing...' : 'Confirm Refresh'}
             onClick={onConfirm}
             disabled={isLoading || isEstimating || !estimate}
             loading={isLoading}
           />
-          <Button label="Cancel" onClick={onClose} secondary disabled={isLoading} />
+          <Button label='Cancel' onClick={onClose} secondary disabled={isLoading} />
         </FlexCol>
       </FlexCol>
     </SheetModal>
@@ -199,32 +211,32 @@ interface SuccessDialogProps {
 }
 
 const ExternalLinkIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path
-      d="M11 7.5V11.5C11 12.0523 10.5523 12.5 10 12.5H2.5C1.94772 12.5 1.5 12.0523 1.5 11.5V4C1.5 3.44772 1.94772 3 2.5 3H6.5M8.5 1.5H12.5M12.5 1.5V5.5M12.5 1.5L6 8"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d='M11 7.5V11.5C11 12.0523 10.5523 12.5 10 12.5H2.5C1.94772 12.5 1.5 12.0523 1.5 11.5V4C1.5 3.44772 1.94772 3 2.5 3H6.5M8.5 1.5H12.5M12.5 1.5V5.5M12.5 1.5L6 8'
+      stroke='currentColor'
+      strokeWidth='1.5'
+      strokeLinecap='round'
+      strokeLinejoin='round'
     />
   </svg>
 )
 
 const HistoryIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path
-      d="M12 8V12L14.5 14.5M12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3Z"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d='M12 8V12L14.5 14.5M12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3Z'
+      stroke='currentColor'
+      strokeWidth='2'
+      strokeLinecap='round'
+      strokeLinejoin='round'
     />
     <path
-      d="M3 12H1M3 12L5 10M3 12L5 14"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d='M3 12H1M3 12L5 10M3 12L5 14'
+      stroke='currentColor'
+      strokeWidth='2'
+      strokeLinecap='round'
+      strokeLinejoin='round'
     />
   </svg>
 )
@@ -238,34 +250,34 @@ const SuccessDialog = ({ isOpen, onClose, txid, refreshedCount }: SuccessDialogP
 
   return (
     <SheetModal isOpen={isOpen} onClose={onClose}>
-      <FlexCol gap="1.5rem" centered>
+      <FlexCol gap='1.5rem' centered>
         <div style={{ color: 'var(--green)' }}>
           <SuccessIcon />
         </div>
         <Text bold>VTXOs Refreshed!</Text>
-        <Text color="dark60" smaller wrap centered>
+        <Text color='dark60' smaller wrap centered>
           Successfully refreshed {refreshedCount} VTXO{refreshedCount !== 1 ? 's' : ''} with extended expiry.
         </Text>
-        <FlexCol gap="0.5rem">
-          <Text color="dark50" smaller>
+        <FlexCol gap='0.5rem'>
+          <Text color='dark50' smaller>
             Transaction ID
           </Text>
-          <FlexRow gap="0.5rem">
+          <FlexRow gap='0.5rem'>
             <Text smaller copy={txid}>
               {shortTxid}
             </Text>
             <span
               onClick={openExplorer}
               style={{ cursor: 'pointer', color: 'var(--purple)', display: 'flex', alignItems: 'center' }}
-              role="button"
+              role='button'
               tabIndex={0}
-              title="Open in explorer"
+              title='Open in explorer'
             >
               <ExternalLinkIcon />
             </span>
           </FlexRow>
         </FlexCol>
-        <Button label="Done" onClick={onClose} />
+        <Button label='Done' onClick={onClose} />
       </FlexCol>
     </SheetModal>
   )
@@ -292,7 +304,7 @@ export default function LendaVtxo() {
 
   useEffect(() => {
     const setup = async () => {
-      const sdk = await getSdkClient();
+      const sdk = await getSdkClient()
       setSdkClient(sdk)
     }
     setup()
@@ -481,21 +493,22 @@ export default function LendaVtxo() {
     setRefreshedCount(0)
   }
 
-  if (!svcWallet) return <Loading text="Loading..." />
+  if (!svcWallet) return <Loading text='Loading...' />
 
   return (
     <>
       <Header
-        text="Refresh VTXOs"
+        text='Refresh VTXOs'
         back={() => navigate(Pages.Apps)}
         auxFunc={() => navigate(Pages.AppLendaVtxoSettings)}
         auxIcon={<HistoryIcon />}
       />
       <Content>
         <Padded>
-          <FlexCol gap="1rem">
-            <Text color="dark60" smaller wrap>
-              VTXOs have an expiry. Swap them instantly for a newer VTXO using this service instead of joining a lengthy batch protocol.
+          <FlexCol gap='1rem'>
+            <Text color='dark60' smaller wrap>
+              VTXOs have an expiry. Swap them instantly for a newer VTXO using this service instead of joining a lengthy
+              batch protocol.
             </Text>
 
             {eligibleVtxos.length === 0 ? (
@@ -503,22 +516,22 @@ export default function LendaVtxo() {
             ) : (
               <>
                 <FlexRow between>
-                  <Text color="dark50" smaller>
+                  <Text color='dark50' smaller>
                     {eligibleVtxos.length} VTXO{eligibleVtxos.length !== 1 ? 's' : ''} available
                   </Text>
                   <span
                     onClick={selectAll}
                     style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                    role="button"
+                    role='button'
                     tabIndex={0}
                   >
-                    <Text color="purple" smaller>
+                    <Text color='purple' smaller>
                       {selectedIds.size === eligibleVtxos.length ? 'Deselect all' : 'Select all'}
                     </Text>
                   </span>
                 </FlexRow>
 
-                <FlexCol gap="0.5rem">
+                <FlexCol gap='0.5rem'>
                   {eligibleVtxos.map((vtxo) => (
                     <VtxoLine
                       key={vtxo.txid}
@@ -567,28 +580,21 @@ export default function LendaVtxo() {
 }
 
 // API client for Lendaswap backend
-const API_BASE_URL =
-  import.meta.env.VITE_LENDASWAP_API_URL || 'http://localhost:3333';
-const ARK_SERVER_URL = import.meta.env.VITE_ARK_SERVER || '';
+const API_BASE_URL = import.meta.env.VITE_LENDASWAP_API_URL || 'http://localhost:3333'
+const ARK_SERVER_URL = import.meta.env.VITE_ARK_SERVER || ''
 
-let sdkClient: SdkClient | null = null;
+let sdkClient: SdkClient | null = null
 
 async function getSdkClient(): Promise<SdkClient> {
   if (!sdkClient) {
-    const walletStorage = createDexieWalletStorage('lendaswap-wallet-v1');
-    const swapStorage = createDexieSwapStorage('lendaswap-v1');
-    sdkClient = await SdkClient.create(
-      API_BASE_URL,
-      walletStorage,
-      swapStorage,
-      'mutinynet',
-      ARK_SERVER_URL,
-    );
+    const walletStorage = createDexieWalletStorage('lendaswap-wallet-v1')
+    const swapStorage = createDexieSwapStorage('lendaswap-v1')
+    sdkClient = await SdkClient.create(API_BASE_URL, walletStorage, swapStorage, 'mutinynet', ARK_SERVER_URL)
     if (!sdkClient) {
-      throw Error('Failed setting up sdk client');
+      throw Error('Failed setting up sdk client')
     }
 
-    await sdkClient.init();
+    await sdkClient.init()
   }
-  return sdkClient;
+  return sdkClient
 }
